@@ -13,18 +13,28 @@
         - a short description
         - the location (text-based or map-based depending on future upgrades)
     
--c
-
-
-
+- community voting system: 
+    - inspired by redit style ranking:
+        - upvote: genuine and important issues.
+        - downvote: irrelavent and spam issues.
+    - all issues with high upvotes get prioritized for review
 
 
 ## How it helps us and society
-- As we all know most of the Government websites dont work so we decide to create a wbsite with inbuilt ai(Gemini).
-- In this website we can submit any problems in our society like road problems, infrastructure, street lights, etc.
-- This ai then takes all the problems and makes it into a clean easy to read report.
-- This report can then be submitted to any official or the RWA of your loca
 
+
+- Many existing government portals struggle with usability and reliability, so we set out to build a more efficient platform enhanced with AI (Gemini).
+- Users can submit issues from their locality—such as road damage, poor infrastructure, malfunctioning streetlights, and more.
+- The integrated AI system organizes these submissions and generates a clear, well-structured report.
+-  This report can then be forwarded to local officials or the Resident Welfare Association (RWA) for review.
+-  From there, the RWA or concerned authorities can formally submit the compiled report to the government.
+
+## What makes us unique
+- community-powered prioritization: Upvotes determine which issues genuinely matter, reducing noise and boosting impact.
+- Users can submit issues from their locality—such as road damage, poor infrastructure, malfunctioning streetlights, and more.
+- The integrated AI system organizes these submissions and generates a clear, well-structured report.
+- This report can then be forwarded to local officials or the Resident Welfare Association (RWA) for review.
+- From there, the RWA or concerned authorities can formally submit the compiled report to the government.
 
 
 
