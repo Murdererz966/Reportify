@@ -1,243 +1,98 @@
-/* ======= Configuration ======= */
-const UPVOTE_THRESHOLD = 5;    // when upvotes reach this, status -> reported
-const DOWNVOTE_THRESHOLD = 3;  // when downvotes reach this, status -> spam
+const langBtn = document.getElementById("langBtn");
+const themeBtn = document.getElementById("themeBtn");
+const form = document.getElementById("reportForm");
+const feed = document.getElementById("feed");
 
-/* ======= Utilities ======= */
-function $(sel){ return document.querySelector(sel); }
-function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,8); }
+let currentLang = "en";
+let issues = [];
 
-/* ======= Persistence ======= */
-const STORAGE_KEY = "reportify.issues.v1";
-const VOTE_KEY = "reportify.votes.v1"; // tracks { issueId: vote } where vote = 1 | -1
+const translations = {
+  en: {heroTitle:"Community Issue Reporting", heroDesc:"Report problems in your area and let the community prioritize important issues.", reportHeading:"Report an Issue", feedHeading:"Reported Issues", submitBtn:"Submit"},
+  kn: {heroTitle:"ಸಮುದಾಯ ಸಮಸ್ಯೆ ವರದಿ", heroDesc:"ನಿಮ್ಮ ಪ್ರದೇಶದ ಸಮಸ್ಯೆಗಳ ವರದಿ ಮಾಡಿ.", reportHeading:"ಸಮಸ್ಯೆ ವರದಿ ಮಾಡಿ", feedHeading:"ವರದಿ ಮಾಡಿದ ಸಮಸ್ಯೆಗಳು", submitBtn:"ಸಲ್ಲಿಸು"},
+  hi: {heroTitle:"समुदाय समस्या रिपोर्टिंग", heroDesc:"अपने क्षेत्र की समस्याएँ रिपोर्ट करें।", reportHeading:"समस्या रिपोर्ट करें", feedHeading:"रिपोर्ट की गई समस्याएँ", submitBtn:"सबमिट करें"}
+};
 
-function loadIssues(){
-  try{
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : [];
-  }catch(e){ console.error(e); return []; }
-}
-function saveIssues(arr){
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(arr));
-}
-
-function loadVotes(){
-  try{
-    const raw = localStorage.getItem(VOTE_KEY);
-    return raw ? JSON.parse(raw) : {};
-  }catch(e){ console.error(e); return {}; }
-}
-function saveVotes(obj){
-  localStorage.setItem(VOTE_KEY, JSON.stringify(obj));
+function switchLang() {
+  currentLang = currentLang==="en"?"kn":currentLang==="kn"?"hi":"en";
+  langBtn.innerText = currentLang.toUpperCase();
+  document.querySelectorAll("[data-key]").forEach(el=>{
+    if(translations[currentLang][el.dataset.key]) el.innerText = translations[currentLang][el.dataset.key];
+  });
 }
 
-/* ======= App State ======= */
-let issues = loadIssues();
-let votes = loadVotes();
+langBtn.addEventListener("click", switchLang);
+themeBtn.addEventListener("click", ()=>document.body.classList.toggle("light"));
 
-/* ======= DOM refs ======= */
-const feed = $("#feed");
-const emptyState = $("#emptyState");
-const reportForm = $("#reportForm");
-const titleInput = $("#title");
-const descInput = $("#description");
-const locationInput = $("#location");
-const imageInput = $("#image");
-const themeBtn = $("#themeBtn");
-const modeBtn = $("#modeBtn");
-
-/* ======= Render logic ======= */
-function renderFeed(){
-  if(!feed) return;
+function renderFeed() {
   feed.innerHTML = "";
-
-  if(!issues || issues.length === 0){
-    emptyState.style.display = "block";
-    return;
-  } else {
-    emptyState.style.display = "none";
-  }
-
-  issues.slice().reverse().forEach((issue) => {
-    const item = document.createElement("article");
-    item.className = "issue card";
-    item.setAttribute("data-id", issue.id);
-
-    // meta (votes)
-    const meta = document.createElement("div");
-    meta.className = "meta";
-
-    const upBtn = document.createElement("button");
-    upBtn.className = "vote-btn";
-    upBtn.setAttribute("aria-label", `Upvote ${issue.title}`);
-    upBtn.innerText = `⬆ ${issue.up}`;
-    upBtn.addEventListener("click", ()=>handleVote(issue.id, 1, upBtn, downBtn));
-
-    const downBtn = document.createElement("button");
-    downBtn.className = "vote-btn";
-    downBtn.setAttribute("aria-label", `Downvote ${issue.title}`);
-    downBtn.innerText = `⬇ ${issue.down}`;
-    downBtn.addEventListener("click", ()=>handleVote(issue.id, -1, upBtn, downBtn));
-
-    meta.appendChild(upBtn);
-    meta.appendChild(downBtn);
-
-    // body
-    const body = document.createElement("div");
-    body.className = "issue-body";
-
-    const title = document.createElement("strong");
-    title.innerText = issue.title;
-
-    const desc = document.createElement("p");
-    desc.innerText = issue.desc;
-
-    const small = document.createElement("div");
-    small.className = "small";
-    small.innerHTML = `<span>Location: ${issue.location || "—"}</span>`;
-
-    const status = document.createElement("div");
-    const badge = document.createElement("span");
-    badge.className = `status-badge ${issue.status==='reported'?'status-reported':issue.status==='spam'?'status-spam':'status-open'}`;
-    badge.innerText = issue.status;
-    status.style.marginTop = "8px";
-
-    body.appendChild(title);
-    body.appendChild(desc);
-    body.appendChild(small);
-
-    // AI / metadata (if present)
-    if(issue.aiSummary){
-      const ai = document.createElement("div");
-      ai.className = "small muted";
-      ai.style.marginTop = "8px";
-      ai.innerHTML = `<strong>AI summary:</strong> ${issue.aiSummary}`;
-      body.appendChild(ai);
-    }
-
-    status.appendChild(badge);
-    body.appendChild(status);
-
-    item.appendChild(meta);
-    item.appendChild(body);
-
-    // optional image
-    if(issue.imageDataUrl){
-      const img = document.createElement("img");
-      img.className = "issue-image";
-      img.alt = issue.title;
-      img.src = issue.imageDataUrl;
-      item.appendChild(img);
-    }
-
-    feed.appendChild(item);
+  issues.forEach((issue, idx) => {
+    const div = document.createElement("div");
+    div.className = "issue";
+    div.innerHTML = `
+      <strong>${issue.title}</strong>
+      <p>${issue.desc}</p>
+      <p><em>Report Summary:</em> ${issue.aiSummary || "Generating..."}</p>
+      <p>
+        <span class="vote-btn" onclick="vote(${idx},1)">⬆ ${issue.up}</span>
+        <span class="vote-btn" onclick="vote(${idx},-1)">⬇ ${issue.down}</span>
+        Status: ${issue.status}
+      </p>
+    `;
+    feed.appendChild(div);
   });
 }
 
-/* ======= Voting logic =======
-   - Prevent duplicate votes in the same browser (tracked in localStorage)
-   - Allow changing a vote (switch from up to down or remove)
-*/
-function handleVote(issueId, voteValue, upBtn, downBtn){
-  const issueIndex = issues.findIndex(i => i.id === issueId);
-  if(issueIndex === -1) return;
-
-  const issue = issues[issueIndex];
-  const prevVote = votes[issueId] || 0;
-
-  // remove same vote (toggle off)
-  if(prevVote === voteValue){
-    votes[issueId] = 0;
-    if(voteValue === 1) issue.up = Math.max(0, issue.up - 1);
-    else issue.down = Math.max(0, issue.down - 1);
-  } else {
-    // switching vote
-    if(prevVote === 1) issue.up = Math.max(0, issue.up - 1);
-    if(prevVote === -1) issue.down = Math.max(0, issue.down - 1);
-
-    votes[issueId] = voteValue;
-    if(voteValue === 1) issue.up++;
-    else issue.down++;
-  }
-
-  // update status thresholds
-  if(issue.up >= UPVOTE_THRESHOLD) issue.status = "reported";
-  else if(issue.down >= DOWNVOTE_THRESHOLD) issue.status = "spam";
-  else issue.status = "open";
-
-  saveVotes(votes);
-  saveIssues(issues);
+const UPVOTE_THRESHOLD=5, DOWNVOTE_THRESHOLD=3;
+function vote(idx, type){
+  if(type===1) issues[idx].up++; else issues[idx].down++;
+  if(issues[idx].up>=UPVOTE_THRESHOLD) issues[idx].status="reported";
+  if(issues[idx].down>=DOWNVOTE_THRESHOLD) issues[idx].status="spam";
   renderFeed();
 }
 
-/* ======= Add issue ======= */
-async function readImageAsDataUrl(file){
-  return new Promise((resolve) => {
-    if(!file) return resolve(null);
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result);
-    reader.onerror = () => resolve(null);
-    reader.readAsDataURL(file);
-  });
+// Gemini API call
+async function generateAIReport(issue, index) {
+  try {
+    const response = await fetch("https://api.gemini.ai/v1/generate", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": "AIzaSyBPCymvLoSDNX5qD8RBqSHs7ow2PtbOkck"
+      },
+      body: JSON.stringify({
+        prompt: `Write a concise, easy-to-read summary of this community issue:\nTitle: ${issue.title}\nDescription: ${issue.desc}`,
+        max_tokens: 100
+      })
+    });
+
+    const data = await response.json();
+    if(data.choices && data.choices[0].text) {
+      issues[index].aiSummary = data.choices[0].text.trim();
+      renderFeed();
+    }
+  } catch(err){
+    console.error("AI API error:", err);
+    issues[index].aiSummary = "Failed to generate summary.";
+    renderFeed();
+  }
 }
 
-reportForm && reportForm.addEventListener("submit", async (ev) => {
-  ev.preventDefault();
-  const title = titleInput.value.trim();
-  const desc = descInput.value.trim();
-  const location = locationInput.value.trim();
-
-  if(!title || !desc){
-    alert("Please provide both title and description.");
-    return;
+// Submit form
+form.addEventListener("submit", e=>{
+  e.preventDefault();
+  const title = document.getElementById("title").value.trim();
+  const desc = document.getElementById("description").value.trim();
+  if(title && desc){
+    const newIssue = {title, desc, up:0, down:0, status:"open", aiSummary:"Generating..."};
+    issues.push(newIssue);
+    const index = issues.length - 1;
+    renderFeed();
+    generateAIReport(newIssue, index); // Call Gemini
+    form.reset();
   }
-
-  // get image as Data URL (for demo only; size may be large)
-  const file = imageInput.files && imageInput.files[0];
-  const dataUrl = await readImageAsDataUrl(file);
-
-  const newIssue = {
-    id: uid(),
-    title,
-    desc,
-    location,
-    imageDataUrl: dataUrl || null,
-    up: 0, down: 0,
-    status: "open",
-    createdAt: new Date().toISOString()
-  };
-
-  issues.push(newIssue);
-  saveIssues(issues);
-  renderFeed();
-
-  reportForm.reset();
-  // scroll to feed so user sees added item
-  const feedCard = document.getElementById("feedCard");
-  if(feedCard) feedCard.scrollIntoView({behavior:"smooth"});
 });
 
-/* Clear button to reset form */
-$("#clearBtn") && $("#clearBtn").addEventListener("click", () => reportForm.reset());
-
-/* Theme toggle */
-themeBtn && themeBtn.addEventListener("click", () => {
-  const current = document.documentElement.getAttribute("data-theme") || "theme1";
-  const next = current === "theme1" ? "theme2" : "theme1";
-  document.documentElement.setAttribute("data-theme", next);
-});
-
-modeBtn && modeBtn.addEventListener("click", () => {
-  document.documentElement.classList.toggle("light");
-  modeBtn.innerText = document.documentElement.classList.contains("light") ? "Light" : "Dark";
-});
-
-/* On load */
-window.addEventListener("DOMContentLoaded", () => {
-  // ensure votes and issues are present (load functions above handle parsing)
-  issues = loadIssues();
-  votes = loadVotes();
-  renderFeed();
-});
+window.onload = renderFeed;
 
 
 
