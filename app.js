@@ -1,85 +1,65 @@
-const langBtn = document.getElementById("langBtn");
-const modeBtn = document.getElementById("modeBtn");
+// Theme / Mode
+function toggleMode(){document.documentElement.classList.toggle("light");}
+function setTheme(name){document.documentElement.setAttribute("data-theme", name);}
 
-let currentLang = "en";
+// Demo Issues
+let issues=[]; // store issues locally
 
-const translations = {
-  en: {
-    brand: "Reportify",
-    navHome: "Home",
-    navIssues: "Issues",
-    navReport: "Report",
-    navAbout: "About",
-    theme1: "Theme 1",
-    theme2: "Theme 2",
-    mode: "Dark",
-    heroTitle: "Community-powered issue reporting",
-    heroSub: "Report problems in your locality, let the community surface what's important.",
-    heroBtn: "Report an Issue",
-    heroBrowse: "Browse Issues",
-    recent: "Recent Issues",
-    demoNote: "Demo mode uses local data."
-  },
+// Feed container
+const feed=document.getElementById("feed");
 
-  kn: {
-    brand: "ರಿಪೋರ್ಟ್‌ಫೈ",
-    navHome: "ಮುಖಪುಟ",
-    navIssues: "ಸಮಸ್ಯೆಗಳು",
-    navReport: "ರಿಪೋರ್ಟ್",
-    navAbout: "ಬಗ್ಗೆ",
-    theme1: "ಥೀಮ್ 1",
-    theme2: "ಥೀಮ್ 2",
-    mode: "ಡಾರ್ಕ್",
-    heroTitle: "ಸಮುದಾಯ ಆಧಾರಿತ ಸಮಸ್ಯೆ ವರದಿ",
-    heroSub: "ನಿಮ್ಮ ಪ್ರದೇಶದ ಸಮಸ್ಯೆಗಳ ಮಾಹಿತಿ ನೀಡಿರಿ.",
-    heroBtn: "ಸಮಸ್ಯೆ ವರದಿ ಮಾಡಿ",
-    heroBrowse: "ಸಮಸ್ಯೆಗಳು ನೋಡಿರಿ",
-    recent: "ಇತ್ತೀಚಿನ ಸಮಸ್ಯೆಗಳು",
-    demoNote: "ಡೆಮೋ ಮೋಡ್ ಸ್ಥಳೀಯ ಡೇಟಾ ಬಳಸುತ್ತದೆ."
-  },
-
-  hi: {
-    brand: "रिपॉर्टिफ़ाई",
-    navHome: "होम",
-    navIssues: "समस्याएँ",
-    navReport: "रिपोर्ट",
-    navAbout: "अबाउट",
-    theme1: "थीम 1",
-    theme2: "थीम 2",
-    mode: "डार्क",
-    heroTitle: "समुदाय आधारित समस्या रिपोर्टिंग",
-    heroSub: "अपने क्षेत्र की समस्याएँ रिपोर्ट करें।",
-    heroBtn: "समस्या रिपोर्ट करें",
-    heroBrowse: "समस्याएँ देखें",
-    recent: "हाल की समस्याएँ",
-    demoNote: "डेमो मोड स्थानीय डेटा उपयोग करता है।"
-  }
-};
-
-function updateLanguage() {
-  document.querySelectorAll("[data-key]").forEach(el => {
-    el.innerText = translations[currentLang][el.dataset.key];
-  });
+// Render feed
+function renderFeed(){
+    if(!feed) return;
+    feed.innerHTML="";
+    issues.forEach((issue,idx)=>{
+        const div=document.createElement("div");
+        div.className="issue";
+        div.innerHTML=`
+            <div class="vote-box">
+                <button class="vote-btn" onclick="vote(${idx},1)">⬆ ${issue.up}</button>
+                <button class="vote-btn" onclick="vote(${idx},-1)">⬇ ${issue.down}</button>
+            </div>
+            <div class="issue-body">
+                <strong>${issue.title}</strong>
+                <p>${issue.desc}</p>
+                <small>Status: </small>
+                <span class="status-badge ${issue.status==='reported'?'status-reported':issue.status==='spam'?'status-spam':'status-open'}">${issue.status}</span>
+            </div>
+        `;
+        feed.appendChild(div);
+    });
 }
 
-langBtn.onclick = () => {
-  if (currentLang === "en") { currentLang = "kn"; langBtn.innerText = "HI"; }
-  else if (currentLang === "kn") { currentLang = "hi"; langBtn.innerText = "EN"; }
-  else { currentLang = "en"; langBtn.innerText = "KN"; }
-  updateLanguage();
-};
-
-function toggleMode() {
-  document.documentElement.classList.toggle("light");
-  modeBtn.innerText =
-    document.documentElement.classList.contains("light") ? "Light" : "Dark";
+// Vote logic
+const UPVOTE_THRESHOLD=5;
+const DOWNVOTE_THRESHOLD=3;
+function vote(idx,type){
+    if(type===1) issues[idx].up++;
+    else issues[idx].down++;
+    if(issues[idx].up>=UPVOTE_THRESHOLD) issues[idx].status="reported";
+    if(issues[idx].down>=DOWNVOTE_THRESHOLD) issues[idx].status="spam";
+    renderFeed();
 }
 
-function setTheme(name) {
-  document.documentElement.classList.remove("theme1", "theme2");
-  document.documentElement.classList.add(name);
+// Form submission
+const form=document.getElementById("reportForm");
+if(form){
+    form.addEventListener("submit",e=>{
+        e.preventDefault();
+        const title=document.getElementById("title").value.trim();
+        const desc=document.getElementById("description").value.trim();
+        if(title && desc){
+            issues.push({title,desc,up:0,down:0,status:"open"});
+            form.reset();
+            renderFeed();
+            alert("Issue submitted!");
+        }
+    });
 }
 
+// Initial render
+window.onload=renderFeed;
 
 
 
