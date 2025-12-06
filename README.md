@@ -7,18 +7,18 @@
     - solves the problems of our city
 
 ## Our Idea- reportify
-- repot local issues: users can easily report public problems happening around them such as (potholes, broken streetlights, water leakage, etc.)
-- image and location support: 
-    - each report can include:
-        - a photo of the issue
-        - a short description
-        - the location (text-based or map-based depending on future upgrades)
+- Report local issues: users can easily report public problems happening around them such as (potholes, broken streetlights, water leakage, etc.)
+- Image and location support: 
+    - Each report can include:
+        - A photo of the issue
+        - A short description
+        - The location (text-based or map-based depending on future upgrades)
     
-- community voting system: 
-    - inspired by redit style ranking:
-        - upvote: genuine and important issues.
-        - downvote: irrelavent and spam issues.
-    - all issues with high upvotes get prioritized for review
+- Community voting system: 
+    - Inspired by redit style ranking:
+        - Upvote: genuine and important issues.
+        - Downvote: irrelavent and spam issues.
+    - All issues with high upvotes get prioritized for review
 
 
 ## How it helps us and society
@@ -29,7 +29,7 @@
 -  From there, the RWA or concerned authorities can formally submit the compiled report to the government.
 
 ## What makes us unique
-- community-powered prioritization: Upvotes determine which issues genuinely matter, reducing noise and boosting impact.
+- Community-powered prioritization: Upvotes determine which issues genuinely matter, reducing noise and boosting impact.
 - Users can submit issues from their locality—such as road damage, poor infrastructure, malfunctioning streetlights, and more.
 - The integrated AI system organizes these submissions and generates a clear, well-structured report.
 - This report can then be forwarded to local officials or the Resident Welfare Association (RWA) for review.
