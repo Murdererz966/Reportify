@@ -16,20 +16,24 @@
 
 <header>
   <div class="logo">Reportify</div>
+
   <nav class="navbar">
     <ul class="nav-links">
         <li><a href="index.html">Home</a></li>
         <li><a href="issues.html">Issues</a></li>
-        <li><a href="report.html">Report Issue</a></li>
+        <li><a href="report.html">Report</a></li>
         <li><a href="about.html">About</a></li>
     </ul>
+
     <div class="theme-switcher">
         <button onclick="setTheme('theme1')">Theme 1</button>
         <button onclick="setTheme('theme2')">Theme 2</button>
-        <button onclick="toggleMode()">Dark/Light</button>
+        <button id="modeBtn" onclick="toggleMode()">Dark</button>
+        <button id="langBtn" onclick="switchLang()">EN</button>
     </div>
   </nav>
 </header>
+
 
 <section class="hero" id="home">
   <h1 data-key="heroTitle">Community-Powered Issue Reporting</h1>
