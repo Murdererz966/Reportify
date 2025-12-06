@@ -1,4 +1,4 @@
-// Elements
+// ===== Elements =====
 const langSelect = document.getElementById("langSelect");
 const themeBtn = document.getElementById("themeBtn");
 const form = document.getElementById("reportForm");
@@ -6,11 +6,11 @@ const feed = document.getElementById("feed");
 const generateReportBtn = document.getElementById("generateReportBtn");
 const finalReportDiv = document.getElementById("finalReport");
 
-// State
+// ===== State =====
 let currentLang = "en";
 let issues = [];
 
-// Translations
+// ===== Translations =====
 const translations = {
   en: {
     reportHeading: "Report an Issue",
@@ -35,7 +35,7 @@ const translations = {
   }
 };
 
-// Language switcher
+// ===== Language Switch =====
 if (langSelect) {
   langSelect.value = currentLang;
   langSelect.addEventListener("change", () => {
@@ -48,14 +48,18 @@ if (langSelect) {
   });
 }
 
-// Theme toggle
+// ===== Theme Toggle =====
 if (themeBtn) {
   themeBtn.addEventListener("click", () => {
     document.body.classList.toggle("light");
   });
 }
 
-// Render feed
+// ===== Vote thresholds =====
+const UPVOTE_THRESHOLD = 5;
+const DOWNVOTE_THRESHOLD = 3;
+
+// ===== Render feed =====
 function renderFeed() {
   if (!feed) return;
   feed.innerHTML = "";
@@ -76,18 +80,37 @@ function renderFeed() {
   });
 }
 
-// Voting
-const UPVOTE_THRESHOLD = 5;
-const DOWNVOTE_THRESHOLD = 3;
+// ===== Voting =====
 function vote(idx, type){
   if(type===1) issues[idx].up++;
   else issues[idx].down++;
+
+  // Update status automatically
   if(issues[idx].up >= UPVOTE_THRESHOLD) issues[idx].status = "reported";
   if(issues[idx].down >= DOWNVOTE_THRESHOLD) issues[idx].status = "spam";
+
   renderFeed();
+  updateAuthorityReportPreview();
 }
 
-// OpenAI GPT API
+// ===== Update Authority Report Preview =====
+function updateAuthorityReportPreview() {
+  if (!finalReportDiv) return;
+  const reportedIssues = issues.filter(i => i.status === "reported");
+  if(reportedIssues.length === 0){
+    finalReportDiv.innerText = "No issues have enough community support to report yet.";
+    return;
+  }
+
+  let reportText = "Issues ready for authorities:\n\n";
+  reportedIssues.forEach((issue, idx)=>{
+    reportText += `${idx+1}. ${issue.title}\nSummary: ${issue.aiSummary}\n\n`;
+  });
+
+  finalReportDiv.innerText = reportText;
+}
+
+// ===== OpenAI GPT API (AI summary) =====
 async function generateAIReport(issue, index) {
   try {
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
@@ -110,15 +133,17 @@ async function generateAIReport(issue, index) {
     if (data.choices && data.choices[0].message) {
       issues[index].aiSummary = data.choices[0].message.content.trim();
       renderFeed();
+      updateAuthorityReportPreview(); // Update report preview after AI summary
     }
   } catch (err) {
     console.error("OpenAI API error:", err);
     issues[index].aiSummary = "Failed to generate summary.";
     renderFeed();
+    updateAuthorityReportPreview();
   }
 }
 
-// Submit form
+// ===== Submit Form =====
 if (form) {
   form.addEventListener("submit", e => {
     e.preventDefault();
@@ -135,7 +160,7 @@ if (form) {
   });
 }
 
-// Generate final authority report
+// ===== Generate Final Authority Report via GPT =====
 if (generateReportBtn) {
   generateReportBtn.addEventListener("click", async () => {
     const reportedIssues = issues.filter(i => i.status === "reported");
@@ -144,17 +169,17 @@ if (generateReportBtn) {
       return;
     }
 
-    let prompt = "Create a clear report for local authorities summarizing these issues:\n\n";
+    let prompt = "Create a clear formal report for local authorities summarizing these issues:\n\n";
     reportedIssues.forEach((issue, idx) => {
       prompt += `${idx+1}. Title: ${issue.title}\nDescription: ${issue.desc}\nAI Summary: ${issue.aiSummary}\n\n`;
     });
 
     try {
-      const response = await fetch("https://api.openai.com/v1/chat/completions", {
+      const response = await fetch("https://api.gemini.ai/v1/generate", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": "Bearer YOUR_OPENAI_API_KEY" // Replace with your key
+          "Authorization": "AIzaSyBPCymvLoSDNX5qD8RBqSHs7ow2PtbOkck" // Replace with your key
         },
         body: JSON.stringify({
           model: "gpt-3.5-turbo",
@@ -178,5 +203,8 @@ if (generateReportBtn) {
   });
 }
 
-// Initial render
-window.onload = renderFeed;
+// ===== Initial render =====
+window.onload = () => {
+  renderFeed();
+  updateAuthorityReportPreview();
+};
