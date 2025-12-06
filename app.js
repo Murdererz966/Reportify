@@ -3,6 +3,8 @@ const langSelect = document.getElementById("langSelect");
 const themeBtn = document.getElementById("themeBtn");
 const form = document.getElementById("reportForm");
 const feed = document.getElementById("feed");
+const generateReportBtn = document.getElementById("generateReportBtn");
+const finalReportDiv = document.getElementById("finalReport");
 
 // State
 let currentLang = "en";
@@ -33,7 +35,7 @@ const translations = {
   }
 };
 
-// ===== Language Switcher =====
+// Language switcher
 if (langSelect) {
   langSelect.value = currentLang;
   langSelect.addEventListener("change", () => {
@@ -46,15 +48,16 @@ if (langSelect) {
   });
 }
 
-// ===== Theme Toggle =====
+// Theme toggle
 if (themeBtn) {
   themeBtn.addEventListener("click", () => {
     document.body.classList.toggle("light");
   });
 }
 
-// ===== Render Feed =====
+// Render feed
 function renderFeed() {
+  if (!feed) return;
   feed.innerHTML = "";
   issues.forEach((issue, idx) => {
     const div = document.createElement("div");
@@ -73,7 +76,7 @@ function renderFeed() {
   });
 }
 
-// ===== Voting =====
+// Voting
 const UPVOTE_THRESHOLD = 5;
 const DOWNVOTE_THRESHOLD = 3;
 function vote(idx, type){
@@ -84,20 +87,20 @@ function vote(idx, type){
   renderFeed();
 }
 
-// ===== OpenAI GPT API Integration =====
+// OpenAI GPT API
 async function generateAIReport(issue, index) {
   try {
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": "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" // <-- Replace with your API key
+        "Authorization": "Bearer YOUR_OPENAI_API_KEY" // Replace with your key
       },
       body: JSON.stringify({
         model: "gpt-3.5-turbo",
         messages: [
           { role: "system", content: "You are a helpful assistant summarizing community issues." },
-          { role: "user", content: `Summarize this issue concisely and clearly for authorities:\nTitle: ${issue.title}\nDescription: ${issue.desc}` }
+          { role: "user", content: `Summarize concisely:\nTitle: ${issue.title}\nDescription: ${issue.desc}` }
         ],
         max_tokens: 100
       })
@@ -115,20 +118,65 @@ async function generateAIReport(issue, index) {
   }
 }
 
-// ===== Submit Form =====
-form.addEventListener("submit", e => {
-  e.preventDefault();
-  const title = document.getElementById("title").value.trim();
-  const desc = document.getElementById("description").value.trim();
-  if (title && desc) {
-    const newIssue = { title, desc, up: 0, down: 0, status: "open", aiSummary: "Generating..." };
-    issues.push(newIssue);
-    const index = issues.length - 1;
-    renderFeed();
-    generateAIReport(newIssue, index);
-    form.reset();
-  }
-});
+// Submit form
+if (form) {
+  form.addEventListener("submit", e => {
+    e.preventDefault();
+    const title = document.getElementById("title").value.trim();
+    const desc = document.getElementById("description").value.trim();
+    if(title && desc){
+      const newIssue = { title, desc, up:0, down:0, status:"open", aiSummary:"Generating..." };
+      issues.push(newIssue);
+      const index = issues.length -1;
+      renderFeed();
+      generateAIReport(newIssue, index);
+      form.reset();
+    }
+  });
+}
 
-// ===== Initial render =====
+// Generate final authority report
+if (generateReportBtn) {
+  generateReportBtn.addEventListener("click", async () => {
+    const reportedIssues = issues.filter(i => i.status === "reported");
+    if (reportedIssues.length === 0) {
+      finalReportDiv.innerText = "No issues have enough community support to report yet.";
+      return;
+    }
+
+    let prompt = "Create a clear report for local authorities summarizing these issues:\n\n";
+    reportedIssues.forEach((issue, idx) => {
+      prompt += `${idx+1}. Title: ${issue.title}\nDescription: ${issue.desc}\nAI Summary: ${issue.aiSummary}\n\n`;
+    });
+
+    try {
+      const response = await fetch("https://api.openai.com/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer YOUR_OPENAI_API_KEY" // Replace with your key
+        },
+        body: JSON.stringify({
+          model: "gpt-3.5-turbo",
+          messages: [
+            { role: "system", content: "You are an assistant creating formal reports for authorities." },
+            { role: "user", content: prompt }
+          ],
+          max_tokens: 500
+        })
+      });
+
+      const data = await response.json();
+      if (data.choices && data.choices[0].message) {
+        finalReportDiv.innerText = data.choices[0].message.content.trim();
+      }
+
+    } catch(err){
+      console.error(err);
+      finalReportDiv.innerText = "Failed to generate report.";
+    }
+  });
+}
+
+// Initial render
 window.onload = renderFeed;
