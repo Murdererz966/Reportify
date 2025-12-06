@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="theme1">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Reportify</title>
+
+    <!-- CSS -->
+    <link rel="stylesheet" href="style.css">
+
+    <!-- JS -->
+    <script defer src="theme.js"></script>
+</head>
+
+<body>
+
+<header>
+  <h1>Reportify</h1>
+  <nav class="navbar">
+    <div class="logo">Reportify</div>
+
+    <ul class="nav-links">
+        <li><a href="index.html">Home</a></li>
+        <li><a href="issues.html">Issues</a></li>
+        <li><a href="report.html">Report Issue</a></li>
+        <li><a href="about.html">About</a></li>
+    </ul>
+
+    <div class="theme-switcher">
+        <button class="theme-btn" onclick="setTheme('theme1')">Theme 1</button>
+        <button class="theme-btn" onclick="setTheme('theme2')">Theme 2</button>
+        <button class="theme-btn" onclick="toggleMode()">Dark/Light</button>
+    </div>
+</nav>
+
+</header>
+
+<section class="hero" id="home">
+  <h2 data-key="heroTitle">Community-Powered Issue Reporting</h2>
+  <p data-key="heroDesc">Report local issues in your area and help authorities prioritize what matters most.</p>
+  <a href="#report" data-key="heroBtn">Report an Issue</a>
+</section>
+
+<div class="container">
+
+  <!-- Report Form -->
+  <section class="card" id="report">
+    <h2 data-key="reportHeading">Report an Issue</h2>
+    <form id="reportForm">
+      <input id="title" placeholder="Short title (e.g., Pothole near bus stop)" required>
+      <textarea id="description" placeholder="Describe the problem" rows="3"></textarea>
+      <input id="location" placeholder="Location (address or area)">
+      <input type="file" id="image" accept="image/*">
+      <button type="submit" data-key="submitBtn">Submit Issue</button>
+    </form>
+  </section>
+
+  <!-- Issue Feed -->
+  <section class="card" id="feedCard">
+    <h2 data-key="feedHeading">Reported Issues</h2>
+    <div id="feed"></div>
+  </section>
+
+</div>
+
+<footer>
+  &copy; 2025 Reportify — Hackathon Demo
+</footer>
+
+<script src="app.js"></script>
+</body>
+</html>
+
+
