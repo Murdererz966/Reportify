@@ -1,5 +1,5 @@
 // Elements
-const langBtn = document.getElementById("langBtn");
+const langSelect = document.getElementById("langSelect");
 const themeBtn = document.getElementById("themeBtn");
 const form = document.getElementById("reportForm");
 const feed = document.getElementById("feed");
@@ -33,27 +33,28 @@ const translations = {
   }
 };
 
-// Language toggle
-function switchLang() {
-  currentLang = currentLang === "en" ? "kn" : currentLang === "kn" ? "hi" : "en";
-  langBtn.innerText = currentLang.toUpperCase();
-  document.querySelectorAll("[data-key]").forEach(el => {
-    if (translations[currentLang][el.dataset.key]) {
-      el.innerText = translations[currentLang][el.dataset.key];
-    }
+// ===== Language Switcher =====
+if (langSelect) {
+  langSelect.value = currentLang;
+  langSelect.addEventListener("change", () => {
+    currentLang = langSelect.value;
+    document.querySelectorAll("[data-key]").forEach(el => {
+      if (translations[currentLang][el.dataset.key]) {
+        el.innerText = translations[currentLang][el.dataset.key];
+      }
+    });
   });
 }
 
-if (langBtn) langBtn.addEventListener("click", switchLang);
+// ===== Theme Toggle =====
+if (themeBtn) {
+  themeBtn.addEventListener("click", () => {
+    document.body.classList.toggle("light");
+  });
+}
 
-// Theme toggle
-if (themeBtn) themeBtn.addEventListener("click", () => {
-  document.body.classList.toggle("light");
-});
-
-// Feed rendering
+// ===== Render Feed =====
 function renderFeed() {
-  if (!feed) return;
   feed.innerHTML = "";
   issues.forEach((issue, idx) => {
     const div = document.createElement("div");
@@ -61,77 +62,73 @@ function renderFeed() {
     div.innerHTML = `
       <strong>${issue.title}</strong>
       <p>${issue.desc}</p>
-      <p><em>Summary:</em> ${issue.aiSummary || "Generating..."}</p>
+      <p><em>AI Summary:</em> ${issue.aiSummary || "Generating..."}</p>
       <p>
         <span class="vote-btn" onclick="vote(${idx},1)">⬆ ${issue.up}</span>
         <span class="vote-btn" onclick="vote(${idx},-1)">⬇ ${issue.down}</span>
-        Status: ${issue.status}
+        Status: <span class="status-${issue.status}">${issue.status}</span>
       </p>
     `;
     feed.appendChild(div);
   });
 }
 
-// Voting logic
-const UPVOTE_THRESHOLD = 5, DOWNVOTE_THRESHOLD = 3;
-function vote(idx, type) {
-  if (type === 1) issues[idx].up++; else issues[idx].down++;
-  if (issues[idx].up >= UPVOTE_THRESHOLD) issues[idx].status = "reported";
-  if (issues[idx].down >= DOWNVOTE_THRESHOLD) issues[idx].status = "spam";
+// ===== Voting =====
+const UPVOTE_THRESHOLD = 5;
+const DOWNVOTE_THRESHOLD = 3;
+function vote(idx, type){
+  if(type===1) issues[idx].up++;
+  else issues[idx].down++;
+  if(issues[idx].up >= UPVOTE_THRESHOLD) issues[idx].status = "reported";
+  if(issues[idx].down >= DOWNVOTE_THRESHOLD) issues[idx].status = "spam";
   renderFeed();
 }
 
-// Gemini AI API
+// ===== OpenAI GPT API Integration =====
 async function generateAIReport(issue, index) {
   try {
-    const response = await fetch("https://api.gemini.ai/v1/generate", {
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": "AIzaSyBPCymvLoSDNX5qD8RBqSHs7ow2PtbOkck" // Replace with your Gemini API key
+        "Authorization": "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" // <-- Replace with your API key
       },
       body: JSON.stringify({
-        model: "gemini-1",
-        prompt: `Write a concise, easy-to-read summary of this community issue:\nTitle: ${issue.title}\nDescription: ${issue.desc}`,
-        max_output_tokens: 100
+        model: "gpt-3.5-turbo",
+        messages: [
+          { role: "system", content: "You are a helpful assistant summarizing community issues." },
+          { role: "user", content: `Summarize this issue concisely and clearly for authorities:\nTitle: ${issue.title}\nDescription: ${issue.desc}` }
+        ],
+        max_tokens: 100
       })
     });
 
     const data = await response.json();
-    if (data?.output_text) {
-      issues[index].aiSummary = data.output_text.trim();
-      renderFeed();
-    } else {
-      issues[index].aiSummary = "Failed to generate summary.";
+    if (data.choices && data.choices[0].message) {
+      issues[index].aiSummary = data.choices[0].message.content.trim();
       renderFeed();
     }
   } catch (err) {
-    console.error("AI API error:", err);
+    console.error("OpenAI API error:", err);
     issues[index].aiSummary = "Failed to generate summary.";
     renderFeed();
   }
 }
 
-// Form submission
-if (form) {
-  form.addEventListener("submit", e => {
-    e.preventDefault();
-    const title = document.getElementById("title").value.trim();
-    const desc = document.getElementById("description").value.trim();
-    if (title && desc) {
-      const newIssue = { title, desc, up: 0, down: 0, status: "open", aiSummary: "Generating..." };
-      issues.push(newIssue);
-      const index = issues.length - 1;
-      renderFeed();
-      generateAIReport(newIssue, index);
-      form.reset();
-    }
-  });
-}
+// ===== Submit Form =====
+form.addEventListener("submit", e => {
+  e.preventDefault();
+  const title = document.getElementById("title").value.trim();
+  const desc = document.getElementById("description").value.trim();
+  if (title && desc) {
+    const newIssue = { title, desc, up: 0, down: 0, status: "open", aiSummary: "Generating..." };
+    issues.push(newIssue);
+    const index = issues.length - 1;
+    renderFeed();
+    generateAIReport(newIssue, index);
+    form.reset();
+  }
+});
 
-// Initialize feed
+// ===== Initial render =====
 window.onload = renderFeed;
-
-
-
-
