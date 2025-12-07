@@ -18,9 +18,9 @@ const translations = {
 
 // Language switch
 langBtn.onclick = () => {
-  currentLang = currentLang==="en"?"kn":currentLang==="kn"?"hi":"en";
+  currentLang = currentLang === "en" ? "kn" : currentLang === "kn" ? "hi" : "en";
   langBtn.innerText = currentLang.toUpperCase();
-  document.querySelectorAll("[data-key]").forEach(el=>{
+  document.querySelectorAll("[data-key]").forEach(el => {
     if(translations[currentLang][el.dataset.key]) el.innerText = translations[currentLang][el.dataset.key];
   });
 };
@@ -31,38 +31,77 @@ modeBtn.onclick = () => {
   modeBtn.innerText = document.body.classList.contains("light") ? "Dark" : "Light";
 };
 
-// Voting & status
-function vote(idx,type){
+// Add a new issue
+reportForm.addEventListener("submit", e => {
+  e.preventDefault();
+  const title = document.getElementById("title").value.trim();
+  const desc = document.getElementById("description").value.trim();
+  const location = document.getElementById("location")?.value || "";
+  if(!title || !desc) return;
+
+  issues.push({ 
+    title, 
+    desc, 
+    location, 
+    up: 0, 
+    down: 0, 
+    status: "Open", 
+    opinions: [], 
+    aiSummary: "" 
+  });
+
+  const idx = issues.length - 1;
+  generateSummary(idx);
+  renderFeed();
+  reportForm.reset();
+});
+
+// Voting function
+function vote(idx, type) {
   const issue = issues[idx];
-  if(type===1) issue.up++; else issue.down++;
-  const prev = issue.status;
-  if(issue.up>=UPVOTE_THRESHOLD) issue.status="reported";
-  if(issue.down>=DOWNVOTE_THRESHOLD) issue.status="spam";
-  if(issue.status==="reported" && prev!=="reported") generatePDF(issue);
+  type === 1 ? issue.up++ : issue.down++;
+
+  if(issue.up >= UPVOTE_THRESHOLD) issue.status = "Reported";
+  if(issue.down >= DOWNVOTE_THRESHOLD) issue.status = "Spam";
+
+  // Optional: Generate PDF automatically when status becomes Reported
+  if(issue.status === "Reported" && issue.up === UPVOTE_THRESHOLD) generatePDF(issue);
+
   renderFeed();
 }
 
 // Add opinion
-function addOpinion(idx){
-  const inp = document.getElementById(`opinion-${idx}`);
-  const txt = inp.value.trim();
-  if(!txt) return;
-  issues[idx].opinions.push(txt);
-  inp.value="";
+function addOpinion(idx) {
+  const input = document.getElementById(`opinion-${idx}`);
+  const text = input.value.trim();
+  if(!text) return;
+
+  issues[idx].opinions.push(text);
+  input.value = "";
   generateSummary(idx);
 }
 
-// Render feed
-function renderFeed(){
-  feed.innerHTML="";
-  issues.forEach((issue,idx)=>{
-    const opinionsHtml = issue.opinions.length>0 ? `<p><strong>Opinions:</strong><br>${issue.opinions.map(o=>"- "+o).join("<br>")}</p>`:"";
-    const addOpinionHtml = issue.status==="open" ? `<input id="opinion-${idx}" placeholder="Add your opinion/update"><button onclick="addOpinion(${idx})">Add</button>`:"";
-    feed.innerHTML+=`
+// Render the feed
+function renderFeed() {
+  feed.innerHTML = "";
+  issues.forEach((issue, idx) => {
+    const opinionsHtml = issue.opinions.length > 0
+      ? `<p><strong>Opinions:</strong><br>${issue.opinions.map((o,i)=>`${i+1}. ${o}`).join("<br>")}</p>`
+      : "";
+
+    const addOpinionHtml = issue.status === "Open"
+      ? `<input id="opinion-${idx}" placeholder="Add your opinion/update"><button onclick="addOpinion(${idx})">Add</button>`
+      : "";
+
+    const statusColor = issue.status === "Reported" ? "green" 
+                      : issue.status === "Spam" ? "red" 
+                      : "orange";
+
+    feed.innerHTML += `
       <div class="issue">
         <h3>${issue.title}</h3>
         <p>${issue.desc}</p>
-        <p><strong>Status:</strong> ${issue.status}</p>
+        <p><strong>Status:</strong> <span style="color:${statusColor}">${issue.status}</span></p>
         ${opinionsHtml}
         <p><strong>AI Summary:</strong><br>${issue.aiSummary || "<i>Loading summary…</i>"}</p>
         ${addOpinionHtml}
@@ -76,72 +115,63 @@ function renderFeed(){
 }
 
 // Generate AI summary via Gemini
-async function generateSummary(idx){
+async function generateSummary(idx) {
   const issue = issues[idx];
-  const prompt = `Summarize the issue concisely. Title: ${issue.title}\nDescription: ${issue.desc}\n${issue.opinions.length>0?"Opinions:\n"+issue.opinions.map((o,i)=>`${i+1}. ${o}`).join("\n"):""}`;
-  try{
-    const res = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent",{
-      method:"POST",
-      headers:{"Content-Type":"application/json","x-goog-api-key":"AIzaSyAOc29Bl3w9Atkj_jrit5Hu56nXgCvy4XM"},
-      body:JSON.stringify({contents:[{parts:[{text:prompt}]}]})
+  const prompt = `Summarize the issue concisely.\nTitle: ${issue.title}\nDescription: ${issue.desc}\n` +
+    (issue.opinions.length ? "Opinions:\n" + issue.opinions.map((o,i)=>`${i+1}. ${o}`).join("\n") : "");
+
+  try {
+    const res = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-goog-api-key": "AIzaSyAOc29Bl3w9Atkj_jrit5Hu56nXgCvy4XM"
+      },
+      body: JSON.stringify({contents:[{parts:[{text:prompt}]}]})
     });
     const data = await res.json();
     issue.aiSummary = data?.candidates?.[0]?.content?.parts?.[0]?.text || "Summary failed.";
-  }catch(e){ issue.aiSummary="Error generating summary."; }
+  } catch(e) {
+    issue.aiSummary = "Error generating summary.";
+  }
   renderFeed();
 }
 
-// PDF generation
-function generatePDF(issue){
+// Generate PDF for a reported issue
+function generatePDF(issue) {
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF();
   const pageWidth = doc.internal.pageSize.getWidth();
   const margin = 14;
-  const maxWidth = pageWidth - margin*2;
-  let y=20;
-  const lineSpacing=8, sectionSpacing=12;
+  const maxWidth = pageWidth - margin * 2;
+  let y = 20;
+  const lineSpacing = 8, sectionSpacing = 12;
 
   doc.setFontSize(16);
   doc.text("Community Issue Report", margin, y);
-  y+=sectionSpacing;
+  y += sectionSpacing;
 
   doc.setFontSize(14);
-  const titleLines = doc.splitTextToSize(`Title: ${issue.title}`, maxWidth);
-  doc.text(titleLines, margin, y);
-  y+=titleLines.length*lineSpacing+4;
+  doc.text(doc.splitTextToSize(`Title: ${issue.title}`, maxWidth), margin, y);
+  y += lineSpacing * doc.splitTextToSize(issue.title, maxWidth).length + 4;
 
-  const descLines = doc.splitTextToSize(`Description: ${issue.desc}`, maxWidth);
-  doc.text(descLines, margin, y);
-  y+=descLines.length*lineSpacing+sectionSpacing;
+  doc.text(doc.splitTextToSize(`Description: ${issue.desc}`, maxWidth), margin, y);
+  y += lineSpacing * doc.splitTextToSize(issue.desc, maxWidth).length + sectionSpacing;
 
-  if(issue.opinions.length>0){
-    doc.text("Opinions / Updates:", margin, y); y+=lineSpacing;
-    issue.opinions.forEach((op,i)=>{
-      const opLines = doc.splitTextToSize(`${i+1}. ${op}`, maxWidth-4);
-      doc.text(opLines, margin+4, y);
-      y+=opLines.length*lineSpacing;
+  if(issue.opinions.length) {
+    doc.text("Opinions / Updates:", margin, y);
+    y += lineSpacing;
+    issue.opinions.forEach((op, i) => {
+      doc.text(doc.splitTextToSize(`${i+1}. ${op}`, maxWidth - 4), margin + 4, y);
+      y += lineSpacing * doc.splitTextToSize(op, maxWidth - 4).length;
     });
-    y+=sectionSpacing;
+    y += sectionSpacing;
   }
 
-  const summaryLines = doc.splitTextToSize(`AI Summary: ${issue.aiSummary}`, maxWidth);
-  doc.text(summaryLines, margin, y);
+  doc.text(doc.splitTextToSize(`AI Summary: ${issue.aiSummary}`, maxWidth), margin, y);
 
   doc.save(`${issue.title.replace(/\s+/g,"_")}_report.pdf`);
 }
 
-// Form submit
-reportForm.addEventListener("submit", e=>{
-  e.preventDefault();
-  const title=document.getElementById("title").value.trim();
-  const desc=document.getElementById("description").value.trim();
-  if(!title||!desc) return;
-
-  issues.push({ title, desc, location:document.getElementById("location")?.value||"", up:0, down:0, status:"open", opinions:[], aiSummary:"" });
-  const idx = issues.length-1;
-  generateSummary(idx);
-  renderFeed();
-  reportForm.reset();
-});
-
-window.onload=renderFeed;
+// Initialize feed on page load
+window.onload = renderFeed;
