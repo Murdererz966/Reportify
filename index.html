@@ -1,89 +1,73 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en" data-theme="theme1">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Reportify — Community Issue Reporting</title>
-
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reportify</title>
   <link rel="stylesheet" href="style.css">
-  <script defer src="app.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </head>
 <body>
 
-  <header>
-    <div class="header-inner container">
-      <div class="logo">Reportify</div>
+<header>
+  <div class="logo">Reportify</div>
+  <nav class="navbar">
+    <ul class="nav-links">
+      <li><a href="#home">Home</a></li>
+      <li><a href="#report">Report Issue</a></li>
+      <li><a href="#feedCard">Issues</a></li>
+      <li><a href="#about">About</a></li>
+    </ul>
+    <div class="theme-switcher">
 
-      <nav class="navbar" aria-label="Main navigation">
-        <ul class="nav-links" role="menu">
-          <li role="none"><a role="menuitem" href="#home">Home</a></li>
-          <li role="none"><a role="menuitem" href="#report">Report</a></li>
-          <li role="none"><a role="menuitem" href="#feedCard">Issues</a></li>
-          <li role="none"><a role="menuitem" href="#about">About</a></li>
-        </ul>
-
-        <div class="controls">
-          <button id="modeBtn" title="Toggle dark/light">Dark</button>
-        </div>
-      </nav>
+      <button id="modeBtn" onclick="toggleMode()">Dark</button>
+      <button id="langBtn">EN</button>
     </div>
-  </header>
+  </nav>
+</header>
 
-  <main class="container">
-    <section class="hero" id="home" aria-labelledby="hero-title">
-      <h1 id="hero-title">Community-Powered Issue Reporting</h1>
-      <p>Report local issues in your area and help authorities prioritize what matters most.</p>
-      <a class="btn" href="#report">Report an Issue</a>
-    </section>
+<main>
 
-    <!-- Report Form -->
-    <section class="card" id="report" aria-labelledby="reportHeading">
-      <h2 id="reportHeading">Report an Issue</h2>
-      <form id="reportForm" novalidate>
-        <label>
-          <span class="sr-only">Title</span>
-          <input id="title" name="title" type="text" placeholder="Short title (e.g. Pothole near bus stop)" required>
-        </label>
-        <label>
-          <span class="sr-only">Description</span>
-          <textarea id="description" name="description" placeholder="Describe the problem" rows="4" required></textarea>
-        </label>
-        <label>
-          <input id="location" name="location" type="text" placeholder="Optional: Location (address or area)">
-        </label>
-        <label>
-          <input id="image" name="image" type="file" accept="image/*">
-        </label>
-        <div class="form-actions">
-          <button id="submitBtn" type="submit">Submit Issue</button>
-          <button id="clearBtn" type="button" class="muted">Clear</button>
-        </div>
-      </form>
-    </section>
+<section class="hero" id="home">
+  <h1 data-key="heroTitle">Community-Powered Issue Reporting</h1>
+  <p data-key="heroDesc">Report local issues in your area and help authorities prioritize what matters most.</p>
+  <a href="#report" class="btn" data-key="heroBtn">Report an Issue</a>
+</section>
 
-    <!-- Issue Feed -->
-    <section class="card" id="feedCard" aria-labelledby="feedHeading">
-      <h2 id="feedHeading">Reported Issues</h2>
-      <div id="feed" aria-live="polite" aria-busy="false"></div>
-      <div id="emptyState" class="muted small">No issues yet — be the first to report one.</div>
-    </section>
+<div class="container">
 
-    <section id="about" class="card">
-      <h3>How it works</h3>
-      <ul>
-        <li>Submit an issue using the form above.</li>
-        <li>Community members upvote/downvote. Enough upvotes → issue marked <strong>reported</strong>.</li>
-        <li>Many downvotes → issue is flagged as <strong>spam</strong>.</li>
-        <li>Votes are stored per browser session to prevent duplicate voting in the same browser.</li>
-      </ul>
-    </section>
-  </main>
+  <!-- Report Form -->
+  <section class="card" id="report">
+    <h2 data-key="reportHeading">Report an Issue</h2>
+    <form id="reportForm">
+      <input id="title" placeholder="Short title (e.g., Pothole near bus stop)" required>
+      <textarea id="description" placeholder="Describe the problem" rows="3" required></textarea>
+      <input id="location" placeholder="Location (address or area)">
+      <input type="file" id="image" accept="image/*">
+      <button type="submit" class="btn" data-key="submitBtn">Submit Issue</button>
+    </form>
+  </section>
 
-  <footer>
-    <div class="container">&copy; 2025 Reportify — Demo</div>
-  </footer>
+  <!-- Issue Feed -->
+  <section class="card" id="feedCard">
+    <h2 data-key="feedHeading">Reported Issues</h2>
+    <div id="feed"></div>
+  </section>
 
+  <!-- About Section -->
+  <section class="card" id="about">
+    <h2>About Reportify</h2>
+    <p>Reportify is a community-powered platform to report issues in your locality. Upvote the most critical problems and help authorities prioritize them efficiently.</p>
+  </section>
+
+</div>
+
+</main>
+
+<footer>
+  &copy; 2025 Reportify — Hackathon Demo
+</footer>
+
+<script src="app.js"></script>
 </body>
 </html>
-
-
