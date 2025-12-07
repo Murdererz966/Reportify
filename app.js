@@ -125,7 +125,7 @@ async function generateSummary(idx) {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "x-goog-api-key": "AIzaSyAOc29Bl3w9Atkj_jrit5Hu56nXgCvy4XM"
+        "x-goog-api-key": ""
       },
       body: JSON.stringify({contents:[{parts:[{text:prompt}]}]})
     });
